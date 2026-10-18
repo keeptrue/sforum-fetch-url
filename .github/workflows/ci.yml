@@ -1,0 +1,80 @@
+name: ci
+
+# 每次推送到 main / PR 都跑：后端单测 + 宿主契约校验。
+# 说明：宿主的 apps/api 尚未发布为 Go module，因此这里检出 SForum 源码并覆盖 go.mod 的 replace。
+# 仓库根就是「外部扩展源根」，扩展包位于 plugins/sforum.fetch-url。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SFORUM_REPOSITORY: zhuchunshu/SForum
+  # 本插件依赖的扩展宿主面（admin.pages[].group 的侧栏分区、lifecycle V2、
+  # ai_tool_probe 设置动作、aiTools[] 工具登记）尚未合入宿主 main。
+  # 宿主合入 main 后把这里改回 main，或钉到对应 tag。
+  SFORUM_REF: feat/extension-host-v2-surfaces
+  PACKAGE_DIR: plugins/sforum.fetch-url
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout plugin repo
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Checkout SForum framework
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SFORUM_REPOSITORY }}
+          ref: ${{ env.SFORUM_REF }}
+          path: sforum
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: plugin/${{ env.PACKAGE_DIR }}/backend/go.mod
+          cache-dependency-path: plugin/${{ env.PACKAGE_DIR }}/backend/go.sum
+
+      - name: Point SDK replace at the checked-out framework
+        working-directory: plugin/${{ env.PACKAGE_DIR }}/backend
+        run: go mod edit -replace github.com/zhuchunshu/sforum/apps/api="$GITHUB_WORKSPACE/sforum/apps/api"
+
+      - name: Backend vet and unit tests
+        working-directory: plugin/${{ env.PACKAGE_DIR }}/backend
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Build plugin binary (host platform)
+        working-directory: plugin/${{ env.PACKAGE_DIR }}/backend
+        # 与宿主 dev 构建（ExtensionPackage.BuildBackend）同一组参数：摘要只由源码决定。
+        run: CGO_ENABLED=0 go build -trimpath -buildvcs=false -o "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR/backend/plugin" ./
+
+      - name: Refresh package digests
+        working-directory: sforum/apps/api
+        run: go run ./cmd/sforum extension digest --write "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR"
+
+      - name: Report stale committed digests (non-blocking)
+        working-directory: plugin
+        run: |
+          if ! git diff --quiet -- "$PACKAGE_DIR/sforum.extension.json"; then
+            echo "::notice title=包摘要有变化::本机构建的可执行文件摘要与仓库中的不一致（工具链差异常见）。发布流水线会按平台重新写入摘要，无需手工提交。"
+            git --no-pager diff --stat -- "$PACKAGE_DIR/sforum.extension.json"
+          fi
+
+      - name: Extension manifest validation
+        working-directory: sforum/apps/api
+        run: go run ./cmd/sforum extension validate "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR"
+
+      - name: Extension host contract checks
+        working-directory: sforum/apps/api
+        run: go run ./cmd/sforum extension test "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR"

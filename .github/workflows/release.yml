@@ -1,0 +1,195 @@
+name: release
+
+# 推 v* 标签即发布：每个目标平台各自构建二进制、刷新摘要、打成 SForum 包并挂到 Release。
+# 仓库根是「外部扩展源根」，扩展包位于 plugins/sforum.fetch-url。
+# 也可用 workflow_dispatch 手动跑（只做校验与构建，不创建 Release）。
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      sforum_ref:
+        description: 构建所使用的 SForum 引用（tag / 分支 / commit）
+        required: false
+        default: feat/extension-host-v2-surfaces
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SFORUM_REPOSITORY: zhuchunshu/SForum
+  SFORUM_REF: ${{ github.event.inputs.sforum_ref || 'feat/extension-host-v2-surfaces' }}
+  PACKAGE_DIR: plugins/sforum.fetch-url
+  PACKAGE_SLUG: sforum-fetch-url
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SFORUM_REPOSITORY }}
+          ref: ${{ env.SFORUM_REF }}
+          path: sforum
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: plugin/${{ env.PACKAGE_DIR }}/backend/go.mod
+          cache-dependency-path: plugin/${{ env.PACKAGE_DIR }}/backend/go.sum
+
+      - name: Point SDK replace at the checked-out framework
+        working-directory: plugin/${{ env.PACKAGE_DIR }}/backend
+        run: go mod edit -replace github.com/zhuchunshu/sforum/apps/api="$GITHUB_WORKSPACE/sforum/apps/api"
+
+      - name: Backend vet and unit tests
+        working-directory: plugin/${{ env.PACKAGE_DIR }}/backend
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Verify tag matches manifest version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          MANIFEST_VERSION="$(python3 -c "import json;print(json.load(open('plugin/$PACKAGE_DIR/sforum.extension.json'))['version'])")"
+          echo "tag=$TAG_VERSION manifest=$MANIFEST_VERSION"
+          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error title=版本不一致::标签 v$TAG_VERSION 与 sforum.extension.json 的 version ($MANIFEST_VERSION) 不一致。"
+            exit 1
+          fi
+
+      - name: Build host binary and run host contract checks
+        run: |
+          set -euo pipefail
+          (cd "plugin/$PACKAGE_DIR/backend" && CGO_ENABLED=0 go build -trimpath -buildvcs=false -o "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR/backend/plugin" ./)
+          cd sforum/apps/api
+          go run ./cmd/sforum extension digest --write "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR"
+          go run ./cmd/sforum extension validate "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR"
+          go run ./cmd/sforum extension test "$GITHUB_WORKSPACE/plugin/$PACKAGE_DIR"
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: darwin, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SFORUM_REPOSITORY }}
+          ref: ${{ env.SFORUM_REF }}
+          path: sforum
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: plugin/${{ env.PACKAGE_DIR }}/backend/go.mod
+          cache-dependency-path: plugin/${{ env.PACKAGE_DIR }}/backend/go.sum
+
+      - name: Point SDK replace at the checked-out framework
+        working-directory: plugin/${{ env.PACKAGE_DIR }}/backend
+        run: go mod edit -replace github.com/zhuchunshu/sforum/apps/api="$GITHUB_WORKSPACE/sforum/apps/api"
+
+      - name: Build ${{ matrix.goos }}/${{ matrix.goarch }} package
+        id: package
+        run: |
+          set -euo pipefail
+          STAGE="$GITHUB_WORKSPACE/stage"
+          rm -rf "$STAGE"; mkdir -p "$STAGE"
+          # 只复制运行时需要的文件：Go 源码、go.mod/sum、旧的构建产物都不进发布包。
+          rsync -a \
+            --exclude '/backend/*.go' --exclude '/backend/go.mod' --exclude '/backend/go.sum' \
+            --exclude '/backend/plugin' --exclude '/backend/plugin.exe' \
+            "plugin/$PACKAGE_DIR/" "$STAGE/"
+
+          (cd "plugin/$PACKAGE_DIR/backend" && \
+            CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -trimpath -buildvcs=false -ldflags "-s -w" -o "$STAGE/backend/plugin" ./)
+
+          VERSION="$(python3 -c "import json;print(json.load(open('plugin/$PACKAGE_DIR/sforum.extension.json'))['version'])")"
+          ASSET="${PACKAGE_SLUG}_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cd sforum/apps/api
+          # 每个平台的二进制不同，摘要必须按该平台重新写入后再打包。
+          go run ./cmd/sforum extension digest --write "$STAGE"
+          go run ./cmd/sforum extension validate "$STAGE"
+          go run ./cmd/sforum extension package "$STAGE" --exclude-source -o "$GITHUB_WORKSPACE/dist/$ASSET.zip"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.asset }}
+          path: |
+            dist/*.zip
+            dist/*.zip.sbom.json
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Compute checksums
+        working-directory: dist
+        run: sha256sum *.zip | tee SHA256SUMS
+
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          {
+            echo '## 安装'
+            echo
+            echo '1. 下载与服务器平台匹配的压缩包（`linux_amd64` / `linux_arm64` / `darwin_arm64` / `darwin_amd64`）。'
+            echo '2. 装到 SForum：后台「插件管理 → 安装插件」上传 zip；或解压到某个外部源根的 `plugins/sforum.fetch-url/`（即本仓库的目录布局）。'
+            echo '3. 后台启用 **SForum AI URL Fetch**，按宿主提示完成一次 exact-artifact 信任确认。'
+            echo '4. 「AI 控制台 → 用途 → forum.reply → 模型可见工具 → 自定义」里加入 `fetch-url`，模型才看得到这个工具。'
+            echo '5. 「AI 能力 → 抓取设置」里至少填一个白名单域名——白名单为空时本插件拒绝一切抓取，这是设计，不是故障。'
+            echo
+            echo '每个压缩包内的清单摘要与其中可执行文件一一对应，跨平台包不可混用；校验：`sha256sum -c SHA256SUMS`。'
+            echo
+            echo '## 兼容性'
+            echo
+            echo '使用宿主 Protocol V2（`sforum.host@2`）与 Manifest V3，需要 SForum `>=0.1.0`。'
+            echo '后台设置页注册在 Core 的「AI 能力」一级菜单下（`admin.pages[].group = "ai-tools"`）。'
+            echo '若启用失败，请对照 README 的「宿主约束速查」。'
+          } > notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file notes.md
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md dist/*
+          fi
+          gh release view "$TAG" --json assets --jq '.assets[].name'

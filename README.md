@@ -81,6 +81,34 @@ cd ../../.. && ./scripts/prepare-package.sh
 摘要一变，旧的信任授权即失效：后台会显示「升级」，需要重新走一次
 「授权当前精确制品 → 确认并升级」。同版本号只改内容时，「重启」按钮不会切换制品。
 
+## 发布
+
+发布走 GitHub Actions（`.github/workflows/release.yml`），本机只需要打标签：
+
+```bash
+# 1. 改 plugins/sforum.fetch-url/sforum.extension.json 的 version，并在 CHANGELOG/提交信息里写清变更
+# 2. 跑一次准备脚本，确认摘要与宿主契约校验通过
+./scripts/prepare-package.sh
+# 3. 提交后打标签并推送
+git commit -am "feat: v1.0.2 —— …"
+git tag -a v1.0.2 -m "v1.0.2" && git push origin main v1.0.2
+```
+
+流水线做三件事：
+
+1. **verify**：检出插件仓库与 SForum 框架（`env.SFORUM_REF`，当前钉在
+   `feat/extension-host-v2-surfaces`，因为 `admin.pages[].group` 等扩展宿主面还没进宿主 main）、
+   跑 `go vet` / `go test`、校验标签与清单版本一致、构建宿主平台二进制后跑
+   `extension digest --write` / `validate` / `test`。
+2. **build**：`linux_amd64`、`linux_arm64`、`darwin_arm64`、`darwin_amd64` 分别交叉编译，
+   **每个平台各自重写摘要再打包**（跨平台二进制不同，摘要不可混用），产出
+   `<slug>_<version>_<os>_<arch>.zip` 与 `.zip.sbom.json`。
+3. **publish**：汇总产物、生成 `SHA256SUMS`、创建/更新 Release 并上传。
+
+`workflow_dispatch` 只跑 verify + build，不会动 Release——用来演练构建而不发布。
+仓库里提交的摘要是本机 `prepare-package.sh` 的参考值；CI 因工具链版本差异可能算出不同摘要，
+这属于预期，发布包里写入的是 CI 自己算的那一份。
+
 ## 两条 AI 工具声明
 
 | 声明 id | 模型可见名 | 用途 |
