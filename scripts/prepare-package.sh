@@ -14,7 +14,10 @@ if [ ! -d "$SFORUM_DIR/apps/api" ]; then
 fi
 
 echo "==> 构建 backend/plugin"
-(cd "$PKG/backend" && go build -trimpath -o "$PKG/backend/plugin" ./)
+# -buildvcs=false：仓库变成 git 仓库后，Go 默认会把 revision/dirty 状态嵌进二进制，
+# 于是同样的源码在不同提交上构建出不同摘要，每 commit 都要让站点重新授权一次。
+# 摘要必须只由源码决定，这条 bootstrap 链上的一致做法也是显式关掉。
+(cd "$PKG/backend" && go build -trimpath -buildvcs=false -o "$PKG/backend/plugin" ./)
 
 echo "==> 刷新包摘要（extension digest --write）"
 (cd "$SFORUM_DIR/apps/api" && go run ./cmd/sforum extension digest --write "$PKG")
