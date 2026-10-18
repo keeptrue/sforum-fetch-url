@@ -169,7 +169,31 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          VERSION="${TAG#v}"
+
+          # 发布说明的「变更」段落取自 CHANGELOG.md 里与标签版本对应的小节。
+          python3 - "$VERSION" <<'PY'
+          import os
+          import re
+          import sys
+
+          version = sys.argv[1]
+          excerpt = ''
+          if os.path.exists('CHANGELOG.md'):
+              text = open('CHANGELOG.md', encoding='utf-8').read()
+              match = re.search(rf'^## \[{re.escape(version)}\].*?(?=^## \[|\Z)', text, re.S | re.M)
+              if match:
+                  excerpt = match.group(0).strip() + '\n'
+              else:
+                  print(f'::warning title=缺少变更小节::CHANGELOG.md 里没有 {version} 的小节，发布说明只写安装步骤。')
+          open('changelog.md', 'w', encoding='utf-8').write(excerpt)
+          PY
+
           {
+            if [ -s changelog.md ]; then
+              cat changelog.md
+              echo
+            fi
             echo '## 安装'
             echo
             echo '1. 下载与服务器平台匹配的压缩包（`linux_amd64` / `linux_arm64` / `darwin_arm64` / `darwin_amd64`）。'
@@ -186,6 +210,7 @@ jobs:
             echo '后台设置页注册在 Core 的「AI 能力」一级菜单下（`admin.pages[].group = "ai-tools"`）。'
             echo '若启用失败，请对照 README 的「宿主约束速查」。'
           } > notes.md
+
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --title "$TAG" --notes-file notes.md
             gh release upload "$TAG" dist/* --clobber
