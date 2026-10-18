@@ -1,0 +1,19 @@
+# 构建产物：插件可执行文件按平台在本地产出，不入库（发布时由 CI 交叉编译并写入摘要）。
+# 路径锚定到仓库根：不加 / 的 dist/ 会连别的 dist 一起忽略。
+# 插件包位于 plugins/<id>/backend/，两种布局都覆盖，避免把 25MB 可执行文件提交上去。
+/plugins/*/backend/plugin
+/plugins/*/backend/plugin.exe
+/plugins/*/backend/backend
+/backend/plugin
+/backend/plugin.exe
+/backend/backend
+/.build/
+/dist/
+
+# 本地调试
+*.log
+.DS_Store
+
+# 编辑器
+.idea/
+.vscode/

@@ -1,0 +1,4 @@
+{
+  "name": "AI URL Fetch",
+  "description": "Let AI replies read the body of pages on an operator-managed domain allowlist, with a switch and an outbound proxy."
+}

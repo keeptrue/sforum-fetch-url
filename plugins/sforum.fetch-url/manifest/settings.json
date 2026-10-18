@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "ui": {
+    "mode": "schema",
+    "layout": "form",
+    "groups": [
+      {
+        "id": "basics",
+        "label": { "zh-CN": "基础", "en-US": "Basics" },
+        "columns": 1
+      },
+      {
+        "id": "allowlist",
+        "label": { "zh-CN": "域名白名单", "en-US": "Domain allowlist" },
+        "columns": 1
+      },
+      {
+        "id": "network",
+        "label": { "zh-CN": "网络与代理", "en-US": "Network and proxy" },
+        "columns": 2
+      },
+      {
+        "id": "probe",
+        "label": { "zh-CN": "测试", "en-US": "Test" },
+        "columns": 1
+      }
+    ],
+    "callouts": [
+      {
+        "id": "not-visible-by-default",
+        "tone": "info",
+        "title": { "zh-CN": "装上不等于生效", "en-US": "Installed is not the same as enabled" },
+        "body": {
+          "zh-CN": "AI 工具是否可被模型调用，由「AI 控制台 → 用途 → forum.reply」的工具白名单决定。请在那一页把「自定义」打开并加入 fetch-url，否则模型看不到这个工具。",
+          "en-US": "Whether the model may call this tool is decided by the purpose tool allowlist in AI console → Purposes → forum.reply. Switch that purpose to Custom and add fetch-url, or the model never sees the tool."
+        },
+        "group": "basics"
+      },
+      {
+        "id": "empty-allowlist-denies-all",
+        "tone": "warning",
+        "title": { "zh-CN": "白名单为空 = 拒绝一切抓取", "en-US": "An empty allowlist denies every fetch" },
+        "body": {
+          "zh-CN": "本插件不提供「全部放行」模式。至少填一个域名，抓取才会发生；未命中的域名会作为可解释失败回给模型。",
+          "en-US": "This plugin has no allow-all mode. Add at least one domain before any fetch can happen; a miss is returned to the model as an explainable failure."
+        },
+        "group": "allowlist"
+      },
+      {
+        "id": "proxy-skips-ip-check",
+        "tone": "warning",
+        "title": { "zh-CN": "使用代理时会跳过本机 IP 校验", "en-US": "A proxy disables the local IP check" },
+        "body": {
+          "zh-CN": "配置代理后，域名由代理解析，本插件无法预知真实出口 IP，因此只保留「拒绝字面私有地址与 localhost/.local/.internal」这一层。请确认你的代理本身可信。",
+          "en-US": "With a proxy configured the name is resolved by the proxy, so the plugin cannot verify the real outbound IP; only the literal private-address and localhost/.local/.internal rejections remain. Make sure the proxy itself is trusted."
+        },
+        "group": "network"
+      }
+    ]
+  },
+  "fields": [
+    {
+      "key": "enabled",
+      "label": { "zh-CN": "启用网页抓取", "en-US": "Enable web fetch" },
+      "description": {
+        "zh-CN": "关闭后插件保持启用，但每次调用都会返回「抓取功能当前已关闭」的可解释失败。它不影响工具在 AI 控制台里的可见性。",
+        "en-US": "When off, the plugin stays enabled but every call returns an explainable \"fetch is currently disabled\" failure. It does not change tool visibility in the AI console."
+      },
+      "type": "boolean",
+      "default": "true",
+      "recommendedValue": "true",
+      "group": "basics"
+    },
+    {
+      "key": "allowed_domains",
+      "label": { "zh-CN": "允许抓取的域名", "en-US": "Domains allowed to be fetched" },
+      "description": {
+        "zh-CN": "每行一个域名，也可以英文逗号分隔；以 # 开头的行视为注释。填 example.com 会同时放行它的子域；写 *.example.com 只放行子域、不放行 example.com 本身。留空表示拒绝一切抓取。",
+        "en-US": "One domain per line, or comma-separated; lines starting with # are comments. example.com also allows its subdomains; *.example.com allows subdomains only, not example.com itself. An empty list denies every fetch."
+      },
+      "type": "textarea",
+      "width": "full",
+      "default": "",
+      "recommendedValue": "example.com\ndocs.example.com\n*.wikipedia.org",
+      "placeholder": {
+        "zh-CN": "example.com\ndocs.example.com\n# 注释行\n*.wikipedia.org",
+        "en-US": "example.com\ndocs.example.com\n# comment\n*.wikipedia.org"
+      },
+      "group": "allowlist"
+    },
+    {
+      "key": "allow_http",
+      "label": { "zh-CN": "允许明文 http", "en-US": "Allow plain http" },
+      "description": {
+        "zh-CN": "默认只允许 https。仅在抓取只有 http 的站点（例如内网文档站）时打开；打开后这些请求不带传输层加密。",
+        "en-US": "Only https is allowed by default. Turn this on only for sites that serve http (for example an internal doc host); those requests then have no transport encryption."
+      },
+      "type": "boolean",
+      "default": "false",
+      "recommendedValue": "false",
+      "group": "network"
+    },
+    {
+      "key": "proxy_url",
+      "label": { "zh-CN": "出站代理", "en-US": "Outbound proxy" },
+      "description": {
+        "zh-CN": "留空表示直连。支持 http、https、socks5 三种代理，例如 http://127.0.0.1:7897 或 socks5://127.0.0.1:1080。当前不支持代理认证。",
+        "en-US": "Leave blank to connect directly. http, https, and socks5 proxies are supported, e.g. http://127.0.0.1:7897 or socks5://127.0.0.1:1080. Proxy authentication is not supported yet."
+      },
+      "type": "text",
+      "default": "",
+      "recommendedValue": "",
+      "placeholder": {
+        "zh-CN": "http://127.0.0.1:7897",
+        "en-US": "http://127.0.0.1:7897"
+      },
+      "group": "network"
+    },
+    {
+      "key": "timeout_ms",
+      "label": { "zh-CN": "单次抓取超时（毫秒）", "en-US": "Per-fetch timeout (ms)" },
+      "description": {
+        "zh-CN": "包含连接、重定向与读取的总预算，可填 1000–4500。AI 工具本身在宿主侧有 5000 毫秒硬上限，因此这里不会允许填更大。",
+        "en-US": "Total budget covering connect, redirects, and read; 1000–4500. The AI tool has a hard 5000 ms host-side ceiling, so larger values are not accepted."
+      },
+      "type": "number",
+      "default": "4000",
+      "recommendedValue": "4000",
+      "group": "network"
+    },
+    {
+      "key": "max_bytes",
+      "label": { "zh-CN": "响应体读取上限（字节）", "en-US": "Response body read limit (bytes)" },
+      "description": {
+        "zh-CN": "只读取这么多字节再抽取正文，可填 16384–1048576。模型最终能看到的正文还会被宿主截断到 8000 字节，所以调大只对长页面有意义。",
+        "en-US": "Only this many bytes are read before extraction; 16384–1048576. The model still sees at most 8000 bytes because the host truncates tool results, so raising this only matters for long pages."
+      },
+      "type": "number",
+      "default": "524288",
+      "recommendedValue": "524288",
+      "group": "network"
+    },
+    {
+      "key": "probe_url",
+      "label": { "zh-CN": "测试目标地址", "en-US": "Probe target URL" },
+      "description": {
+        "zh-CN": "只给下面「测试抓取」按钮使用，不参与 AI 工具的实际抓取行为。建议填一个你确定在白名单里的页面。",
+        "en-US": "Used only by the Test fetch button below; it does not affect what the AI tool fetches. Prefer a page you know is inside the allowlist."
+      },
+      "type": "text",
+      "default": "https://example.com/",
+      "recommendedValue": "https://example.com/",
+      "placeholder": {
+        "zh-CN": "https://example.com/",
+        "en-US": "https://example.com/"
+      },
+      "group": "probe"
+    }
+  ],
+  "actions": [
+    {
+      "id": "probe",
+      "kind": "ai_tool_probe",
+      "label": { "zh-CN": "测试抓取", "en-US": "Test fetch" },
+      "description": {
+        "zh-CN": "用上面的草稿值（白名单、代理、超时等）对「测试目标地址」做一次真实抓取。它不受「启用网页抓取」开关影响：要回答的是「按当前配置能不能抓」。",
+        "en-US": "Perform one real fetch of the probe target using the draft values above (allowlist, proxy, timeout). It ignores the enable switch: it answers \"can this configuration fetch?\"."
+      },
+      "placement": "footer",
+      "useDraftValues": true,
+      "fields": [
+        "allowed_domains",
+        "allow_http",
+        "proxy_url",
+        "timeout_ms",
+        "max_bytes",
+        "probe_url"
+      ],
+      "tool": "sforum.fetch-url.tool.probe_fetch"
+    }
+  ]
+}

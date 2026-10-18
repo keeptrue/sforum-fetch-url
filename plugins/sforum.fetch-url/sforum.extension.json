@@ -1,0 +1,149 @@
+{
+  "admin": {
+    "entry": "/settings",
+    "pages": [
+      {
+        "description": "总开关、域名白名单与出站代理。",
+        "group": "ai-tools",
+        "icon": "i-tabler-settings",
+        "label": "抓取设置",
+        "menu": true,
+        "order": 50,
+        "path": "/settings",
+        "view": "settings"
+      }
+    ]
+  },
+  "aiTools": [
+    {
+      "contractVersion": "sforum.fetch-url.tool.fetch_url@1",
+      "description": "抓取一个外部网页并返回它的正文纯文本。当用户给出链接、或需要引用站外页面内容时使用。只有运营者已把该域名加入白名单的网址才能抓取；不在白名单、非文本响应或超时都会返回一条可解释的说明。",
+      "handler": "sforum.fetch-url.tool.fetch_url",
+      "id": "sforum.fetch-url.tool.fetch_url",
+      "name": "fetch-url",
+      "parameters": {
+        "properties": {
+          "url": {
+            "description": "要抓取的完整 http(s) URL，例如 https://example.com/docs/intro。",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "type": "object"
+      },
+      "timeoutMs": 5000
+    },
+    {
+      "contractVersion": "sforum.fetch-url.tool.probe_fetch@1",
+      "description": "仅供管理员在插件设置页执行「测试抓取」使用，模型不应调用它。它用设置页当前草稿值（白名单、代理、超时等）对 probe_url 做一次真实抓取并返回诊断信息。",
+      "handler": "sforum.fetch-url.tool.probe_fetch",
+      "id": "sforum.fetch-url.tool.probe_fetch",
+      "name": "sforum-fetch-url-probe",
+      "parameters": {
+        "properties": {
+          "allow_http": {
+            "description": "设置页草稿中的「允许明文 http」值。",
+            "type": "string"
+          },
+          "allowed_domains": {
+            "description": "设置页草稿中的域名白名单原文。",
+            "type": "string"
+          },
+          "max_bytes": {
+            "description": "设置页草稿中的响应体读取上限。",
+            "type": "string"
+          },
+          "probe_url": {
+            "description": "设置页草稿中的测试目标地址。",
+            "type": "string"
+          },
+          "proxy_url": {
+            "description": "设置页草稿中的出站代理地址。",
+            "type": "string"
+          },
+          "timeout_ms": {
+            "description": "设置页草稿中的单次抓取超时。",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "timeoutMs": 5000
+    }
+  ],
+  "author": {
+    "name": "SForum",
+    "url": "https://github.com/zhuchunshu/sforum"
+  },
+  "backend": {
+    "digest": "f84a7d38de9b8c4fdbbc89b71ecc70e1dd32f161be3f17db8a1898b788208a89",
+    "entry": "backend/plugin",
+    "hostApiVersion": "sforum.host@2",
+    "protocolVersion": 2,
+    "rpc": "hashicorp-go-plugin"
+  },
+  "capabilities": [
+    "net.outbound"
+  ],
+  "description": "让 AI 回复能够读取运营者白名单内网页的正文：域名白名单、总开关、出站代理。",
+  "id": "sforum.fetch-url",
+  "includes": {
+    "langs": "manifest/langs",
+    "settings": "manifest/settings.json"
+  },
+  "lifecycle": {
+    "contractVersion": "sforum.fetch-url.lifecycle@1",
+    "disable": {
+      "checkpointSchema": "sforum.fetch-url.lifecycle.checkpoint@1",
+      "execute": "sforum.fetch-url.lifecycle.disable.execute",
+      "plan": "sforum.fetch-url.lifecycle.disable.plan",
+      "progressSchema": "sforum.fetch-url.lifecycle.progress@1"
+    },
+    "enable": {
+      "checkpointSchema": "sforum.fetch-url.lifecycle.checkpoint@1",
+      "execute": "sforum.fetch-url.lifecycle.enable.execute",
+      "plan": "sforum.fetch-url.lifecycle.enable.plan",
+      "progressSchema": "sforum.fetch-url.lifecycle.progress@1"
+    },
+    "install": {
+      "checkpointSchema": "sforum.fetch-url.lifecycle.checkpoint@1",
+      "execute": "sforum.fetch-url.lifecycle.install.execute",
+      "plan": "sforum.fetch-url.lifecycle.install.plan",
+      "progressSchema": "sforum.fetch-url.lifecycle.progress@1"
+    },
+    "rollback": {
+      "checkpointSchema": "sforum.fetch-url.lifecycle.checkpoint@1",
+      "execute": "sforum.fetch-url.lifecycle.rollback.execute",
+      "plan": "sforum.fetch-url.lifecycle.rollback.plan",
+      "progressSchema": "sforum.fetch-url.lifecycle.progress@1"
+    },
+    "uninstall": {
+      "checkpointSchema": "sforum.fetch-url.lifecycle.checkpoint@1",
+      "execute": "sforum.fetch-url.lifecycle.uninstall.execute",
+      "plan": "sforum.fetch-url.lifecycle.uninstall.plan",
+      "progressSchema": "sforum.fetch-url.lifecycle.progress@1"
+    },
+    "upgrade": {
+      "checkpointSchema": "sforum.fetch-url.lifecycle.checkpoint@1",
+      "execute": "sforum.fetch-url.lifecycle.upgrade.execute",
+      "plan": "sforum.fetch-url.lifecycle.upgrade.plan",
+      "progressSchema": "sforum.fetch-url.lifecycle.progress@1"
+    }
+  },
+  "manifestVersion": 3,
+  "name": "SForum AI URL Fetch",
+  "packageFiles": [
+    {
+      "digest": "f84a7d38de9b8c4fdbbc89b71ecc70e1dd32f161be3f17db8a1898b788208a89",
+      "id": "sforum.fetch-url.file.backend",
+      "kind": "executable",
+      "path": "backend/plugin"
+    }
+  ],
+  "sforumVersion": "\u003e=0.1.0",
+  "type": "plugin",
+  "url": "https://github.com/zhuchunshu/sforum-fetch-url",
+  "version": "1.0.1"
+}
