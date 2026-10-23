@@ -111,8 +111,9 @@ git tag -a v1.0.2 -m "v1.0.2" && git push origin main v1.0.2
    缺包或仍是草稿则流水线直接失败。
 
 `workflow_dispatch` 只跑 verify + build，不会动 Release——用来演练构建而不发布。
-仓库里提交的摘要是本机 `prepare-package.sh` 的参考值；CI 因工具链版本差异可能算出不同摘要，
-这属于预期，发布包里写入的是 CI 自己算的那一份。
+仓库里提交的摘要是本机 `prepare-package.sh` 的参考值（本机构建用本地 SForum 检出）；
+CI 用钉住的宿主 tag 构建，宿主 SDK 与 Go 工具链都和本机未必一致，于是可能算出不同摘要——
+这属于预期，CI 只会以 notice 提示，发布包里写入的是 CI 自己算的那一份。
 
 ## 两条 AI 工具声明
 
