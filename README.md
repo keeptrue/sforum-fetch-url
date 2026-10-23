@@ -1,5 +1,8 @@
 # SForum AI URL Fetch (`sforum.fetch-url`)
 
+[![ci](https://github.com/zhuchunshu/sforum-fetch-url/actions/workflows/ci.yml/badge.svg)](https://github.com/zhuchunshu/sforum-fetch-url/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/zhuchunshu/sforum-fetch-url)](https://github.com/zhuchunshu/sforum-fetch-url/releases)
+
 让 SForum 的 AI 回复能够**真的读到**用户给出的外链正文，而不是靠模型记忆猜。
 
 用户在主题或评论里 @ 或回复 AI 机器人并贴出链接时，机器人会调用本插件贡献的
@@ -96,14 +99,16 @@ git tag -a v1.0.2 -m "v1.0.2" && git push origin main v1.0.2
 
 流水线做三件事：
 
-1. **verify**：检出插件仓库与 SForum 框架（`env.SFORUM_REF`，当前钉在
-   `feat/extension-host-v2-surfaces`，因为 `admin.pages[].group` 等扩展宿主面还没进宿主 main）、
+1. **verify**：检出插件仓库与 SForum 框架（`env.SFORUM_REF`，默认钉在宿主 `v3.0.13`——
+   `admin.pages[].group` 等扩展宿主面从该版本起已在宿主 main 上，钉 tag 让构建基线可复现）、
    跑 `go vet` / `go test`、校验标签与清单版本一致、构建宿主平台二进制后跑
    `extension digest --write` / `validate` / `test`。
 2. **build**：`linux_amd64`、`linux_arm64`、`darwin_arm64`、`darwin_amd64` 分别交叉编译，
    **每个平台各自重写摘要再打包**（跨平台二进制不同，摘要不可混用），产出
    `<slug>_<version>_<os>_<arch>.zip` 与 `.zip.sbom.json`。
-3. **publish**：汇总产物、生成 `SHA256SUMS`、创建/更新 Release 并上传。
+3. **publish**：汇总产物、生成 `SHA256SUMS`、创建/更新 Release 并上传；随后断言
+   「Release 非草稿 + 四个平台包齐全」，已存在的草稿会被 `--draft=false` 转正，
+   缺包或仍是草稿则流水线直接失败。
 
 `workflow_dispatch` 只跑 verify + build，不会动 Release——用来演练构建而不发布。
 仓库里提交的摘要是本机 `prepare-package.sh` 的参考值；CI 因工具链版本差异可能算出不同摘要，

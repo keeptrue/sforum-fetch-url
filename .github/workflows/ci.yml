@@ -13,12 +13,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # PR 上的旧运行没有价值：同一个 ref 只保留最新一次。
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   SFORUM_REPOSITORY: zhuchunshu/SForum
   # 本插件依赖的扩展宿主面（admin.pages[].group 的侧栏分区、lifecycle V2、
-  # ai_tool_probe 设置动作、aiTools[] 工具登记）尚未合入宿主 main。
-  # 宿主合入 main 后把这里改回 main，或钉到对应 tag。
-  SFORUM_REF: feat/extension-host-v2-surfaces
+  # ai_tool_probe 设置动作、aiTools[] 工具登记）自宿主 v3.0.13 起已在 main 上。
+  # 这里钉 tag 而不是 main：构建基线可复现，宿主 main 前进也不会让旧版本莫名变红。
+  # 升级宿主基线时同步改本文件、release.yml 与 backend/go.mod 的 go 版本。
+  SFORUM_REF: v3.0.13
   PACKAGE_DIR: plugins/sforum.fetch-url
 
 jobs:

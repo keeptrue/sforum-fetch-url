@@ -77,6 +77,21 @@ cd ../../.. && ./scripts/prepare-package.sh
 11. **外部扩展源只在 API 启动时扫描**；`extensions/dev/` 从不被扫描（只是脚手架区）。
 12. **`air` 在自身启动时缓存 env**：改了 SForum 的 `.env` 必须重启 `air` 才生效。
 
+## 发布
+
+推 `v*` 标签触发 `.github/workflows/release.yml`：verify（`go vet` / `go test` + 宿主
+`extension validate|test` + 标签与清单版本一致性）→ 四平台矩阵交叉编译
+（linux/darwin × amd64/arm64，每平台各自 `digest --write` 后打包 zip + SBOM）→
+publish（`SHA256SUMS` + Release）。
+
+- **发版前把 `sforum.extension.json` 的 version 提到与标签一致**，并在 `CHANGELOG.md`
+  写同名小节——发布说明就从那里生成。
+- CI 与 Release 共用 `SFORUM_REF`（当前钉 `v3.0.13`，扩展宿主面自该版本起已在宿主 main）。
+  升宿主基线时同步改两个 workflow 和 `backend/go.mod` 的 `go` 指令。
+- publish 会断言「Release 非草稿 + 四个平台包齐全」：草稿会被自动转正，缺包直接失败。
+- `workflow_dispatch` 只跑 verify + build，不创建 Release，用来演练构建。
+- Windows 未发布：宿主按 `backend/entry` 直接执行、不做 `.exe` 归一化，未经实机验证。
+
 ## 当前环境事实（2026-10-15）
 
 - SForum `.env`：`EXTERNAL_EXTENSION_ROOTS=…/SForum/extensions/dev,~/Code/github/sforum-oauth2-provider,~/Code/github/sforum-fetch-url`

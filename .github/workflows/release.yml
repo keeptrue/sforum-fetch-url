@@ -12,7 +12,7 @@ on:
       sforum_ref:
         description: 构建所使用的 SForum 引用（tag / 分支 / commit）
         required: false
-        default: feat/extension-host-v2-surfaces
+        default: v3.0.13
 
 permissions:
   contents: write
@@ -23,7 +23,8 @@ concurrency:
 
 env:
   SFORUM_REPOSITORY: zhuchunshu/SForum
-  SFORUM_REF: ${{ github.event.inputs.sforum_ref || 'feat/extension-host-v2-surfaces' }}
+  # 与 ci.yml 同一个宿主基线 tag；四条流水线（ci / release × 本地）都按它构建。
+  SFORUM_REF: ${{ github.event.inputs.sforum_ref || 'v3.0.13' }}
   PACKAGE_DIR: plugins/sforum.fetch-url
   PACKAGE_SLUG: sforum-fetch-url
 
@@ -116,9 +117,12 @@ jobs:
           STAGE="$GITHUB_WORKSPACE/stage"
           rm -rf "$STAGE"; mkdir -p "$STAGE"
           # 只复制运行时需要的文件：Go 源码、go.mod/sum、旧的构建产物都不进发布包。
+          # backend/backend 是宿主旧入口名留下的构建产物，若不排除就会被一起打包，
+          # 白白让每个平台包多带一个 25MB 的陈旧二进制。
           rsync -a \
             --exclude '/backend/*.go' --exclude '/backend/go.mod' --exclude '/backend/go.sum' \
-            --exclude '/backend/plugin' --exclude '/backend/plugin.exe' \
+            --exclude '/backend/plugin' --exclude '/backend/plugin.exe' --exclude '/backend/backend' \
+            --exclude '/backend/backend.exe' \
             "plugin/$PACKAGE_DIR/" "$STAGE/"
 
           (cd "plugin/$PACKAGE_DIR/backend" && \
@@ -170,6 +174,15 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
+          EXPECTED_ZIPS=4
+
+          # 缺平台包时宁可失败，也不发一个「看起来有四个包」的版本。
+          ACTUAL_ZIPS="$(find dist -maxdepth 1 -name '*.zip' | wc -l | tr -d ' ')"
+          if [ "$ACTUAL_ZIPS" -ne "$EXPECTED_ZIPS" ]; then
+            echo "::error title=平台包数量不对::期望 $EXPECTED_ZIPS 个 zip，实际 $ACTUAL_ZIPS 个。"
+            ls -l dist
+            exit 1
+          fi
 
           # 发布说明的「变更」段落取自 CHANGELOG.md 里与标签版本对应的小节。
           python3 - "$VERSION" <<'PY'
@@ -212,9 +225,25 @@ jobs:
           } > notes.md
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "$TAG" --notes-file notes.md
+            # 标签对应的 Release 已存在（草稿也算）时，gh release create 会直接失败，
+            # 只能走 edit；这一步必须把草稿转正，否则下载者在 Release 页看不到任何东西。
+            gh release edit "$TAG" --title "$TAG" --notes-file notes.md --draft=false
             gh release upload "$TAG" dist/* --clobber
           else
-            gh release create "$TAG" --title "$TAG" --notes-file notes.md dist/*
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md --latest dist/*
           fi
-          gh release view "$TAG" --json assets --jq '.assets[].name'
+
+          # 断言「已发布 + 四个平台包都在」：草稿或漏传都算流水线失败。
+          DRAFT="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+          if [ "$DRAFT" != "false" ]; then
+            echo "::error title=Release 仍是草稿::标签 $TAG 的 Release 处于草稿状态，外部不可见。"
+            exit 1
+          fi
+          UPLOADED="$(gh release view "$TAG" --json assets --jq '[.assets[] | select(.name | endswith(".zip"))] | length')"
+          if [ "$UPLOADED" -lt "$EXPECTED_ZIPS" ]; then
+            echo "::error title=资产不全::Release 上只有 $UPLOADED 个平台包，期望 $EXPECTED_ZIPS 个。"
+            exit 1
+          fi
+
+          gh release edit "$TAG" --latest
+          gh release view "$TAG" --json name,isDraft,assets --jq '{name: .name, draft: .isDraft, assets: [.assets[].name]}'
