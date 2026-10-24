@@ -3,6 +3,8 @@
 [![ci](https://github.com/zhuchunshu/sforum-fetch-url/actions/workflows/ci.yml/badge.svg)](https://github.com/zhuchunshu/sforum-fetch-url/actions/workflows/ci.yml)
 [![release](https://img.shields.io/github/v/release/zhuchunshu/sforum-fetch-url)](https://github.com/zhuchunshu/sforum-fetch-url/releases)
 
+![AI 网页抓取 社交卡](./plugins/sforum.fetch-url/brand/social-preview.png)
+
 让 SForum 的 AI 回复能够**真的读到**用户给出的外链正文，而不是靠模型记忆猜。
 
 用户在主题或评论里 @ 或回复 AI 机器人并贴出链接时，机器人会调用本插件贡献的

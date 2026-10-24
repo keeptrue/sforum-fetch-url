@@ -1,5 +1,7 @@
 # sforum.fetch-url
 
+![AI 网页抓取 社交卡](./brand/social-preview.png)
+
 SForum 扩展包：给 AI 回复一个 `fetch-url` 工具，让它能读到运营者白名单内页面的正文。
 
 面向使用者的完整说明（安装、设置、安全边界、已知降级）见仓库根 `README.md`；
