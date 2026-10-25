@@ -78,7 +78,7 @@
     "url": "https://github.com/zhuchunshu/sforum"
   },
   "backend": {
-    "digest": "86ae17f82260fcaf24d4c80f0f3f823d6b63c2f388ab11f43ddb0103a1422448",
+    "digest": "d652d501056af2bd737ca50acce40951db607a1a7a7a99f5e1b314402fcc0995",
     "entry": "backend/plugin",
     "hostApiVersion": "sforum.host@2",
     "protocolVersion": 2,
@@ -136,7 +136,7 @@
   "name": "SForum AI URL Fetch",
   "packageFiles": [
     {
-      "digest": "86ae17f82260fcaf24d4c80f0f3f823d6b63c2f388ab11f43ddb0103a1422448",
+      "digest": "d652d501056af2bd737ca50acce40951db607a1a7a7a99f5e1b314402fcc0995",
       "id": "sforum.fetch-url.file.backend",
       "kind": "executable",
       "path": "backend/plugin"
@@ -145,5 +145,5 @@
   "sforumVersion": "\u003e=0.1.0",
   "type": "plugin",
   "url": "https://github.com/zhuchunshu/sforum-fetch-url",
-  "version": "1.0.2"
+  "version": "1.0.3"
 }
