@@ -1,7 +1,7 @@
 # SForum AI URL Fetch (`sforum.fetch-url`)
 
-[![ci](https://github.com/zhuchunshu/sforum-fetch-url/actions/workflows/ci.yml/badge.svg)](https://github.com/zhuchunshu/sforum-fetch-url/actions/workflows/ci.yml)
-[![release](https://img.shields.io/github/v/release/zhuchunshu/sforum-fetch-url)](https://github.com/zhuchunshu/sforum-fetch-url/releases)
+[![ci](https://github.com/keeptrue/sforum-fetch-url/actions/workflows/ci.yml/badge.svg)](https://github.com/keeptrue/sforum-fetch-url/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/keeptrue/sforum-fetch-url)](https://github.com/keeptrue/sforum-fetch-url/releases)
 
 ![AI 网页抓取 社交卡](./plugins/sforum.fetch-url/brand/social-preview.png)
 
@@ -101,8 +101,9 @@ git tag -a v1.0.2 -m "v1.0.2" && git push origin main v1.0.2
 
 流水线做三件事：
 
-1. **verify**：检出插件仓库与 SForum 框架（`env.SFORUM_REF`，默认钉在宿主 `v3.0.13`——
-   `admin.pages[].group` 等扩展宿主面从该版本起已在宿主 main 上，钉 tag 让构建基线可复现）、
+1. **verify**：检出插件仓库与 SForum 框架（`env.SFORUM_REF`，默认钉在宿主提交 `e753c72b0`——
+   该提交是账号改名 `zhuchunshu` → `keeptrue` 的落地点，`apps/api/go.mod` 从这里起声明
+   `github.com/keeptrue/sforum/apps/api`；钉 commit 让构建基线可复现）、
    跑 `go vet` / `go test`、校验标签与清单版本一致、构建宿主平台二进制后跑
    `extension digest --write` / `validate` / `test`。
 2. **build**：`linux_amd64`、`linux_arm64`、`darwin_arm64`、`darwin_amd64` 分别交叉编译，

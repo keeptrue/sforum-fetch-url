@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	pluginv2 "github.com/zhuchunshu/sforum/apps/api/sdk/plugin/v2"
+	pluginv2 "github.com/keeptrue/sforum/apps/api/sdk/plugin/v2"
 )
 
 const (
@@ -319,7 +319,7 @@ func readBounded(reader io.Reader, limit int64) ([]byte, error) {
 }
 
 func (e *Engine) userAgent() string {
-	return fmt.Sprintf("SForum-FetchURL/%s (+https://github.com/zhuchunshu/sforum-fetch-url)", pluginVersion)
+	return fmt.Sprintf("SForum-FetchURL/%s (+https://github.com/keeptrue/sforum-fetch-url)", pluginVersion)
 }
 
 func (e *Engine) describeAllowlist() string {

@@ -1,9 +1,9 @@
-module github.com/zhuchunshu/sforum-fetch-url/backend
+module github.com/keeptrue/sforum-fetch-url/backend
 
 go 1.26.10
 
 require (
-	github.com/zhuchunshu/sforum/apps/api v0.0.0
+	github.com/keeptrue/sforum/apps/api v0.0.0
 	golang.org/x/text v0.42.0
 )
 
@@ -27,4 +27,4 @@ require (
 
 // 本仓库与 SForum 检出同级目录时可直接构建；CI 会用 `go mod edit -replace`
 // 覆盖为它自己的检出路径（见 .github/workflows）。
-replace github.com/zhuchunshu/sforum/apps/api => ../../../../SForum/apps/api
+replace github.com/keeptrue/sforum/apps/api => ../../../../SForum/apps/api

@@ -106,7 +106,8 @@ publish（`SHA256SUMS` + Release）。
 
 - **发版前把 `sforum.extension.json` 的 version 提到与标签一致**，并在 `CHANGELOG.md`
   写同名小节——发布说明就从那里生成。
-- CI 与 Release 共用 `SFORUM_REF`（当前钉 `v3.0.13`，扩展宿主面自该版本起已在宿主 main）。
+- CI 与 Release 共用 `SFORUM_REF`（当前钉 `e753c72b0` = 账号改名提交；宿主 `apps/api/go.mod`
+  自该提交起声明 `github.com/keeptrue/sforum/apps/api`，早于此的 tag 仍是旧模块路径，钉上去会编译失败）。
   升宿主基线时同步改两个 workflow 和 `backend/go.mod` 的 `go` 指令。
 - publish 会断言「Release 非草稿 + 四个平台包齐全」：草稿会被自动转正，缺包直接失败。
 - `workflow_dispatch` 只跑 verify + build，不创建 Release，用来演练构建。
