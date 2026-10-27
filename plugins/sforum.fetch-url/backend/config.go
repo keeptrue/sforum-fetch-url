@@ -29,10 +29,11 @@ type Config struct {
 }
 
 const (
-	// 单次抓取总预算。上限 4500 刻意小于 AI 工具声明的 5000 毫秒：宿主会拿
-	// 声明的 timeoutMs 作为调用截止时间，插件自己必须留出封装与返回的余量。
+	// 单次抓取总预算。宿主 v3.0.20 的 AIToolMaximumTimeoutMS 是 30000，清单按
+	// 上限声明，插件内部上限留 1000 毫秒给封装、序列化与返回：宿主拿声明的
+	// timeoutMs 当调用截止时间，预算打满声明值就一定会被先掐断。
 	minTimeoutMS     = 1000
-	maxTimeoutMS     = 4500
+	maxTimeoutMS     = 29000
 	defaultTimeoutMS = 4000
 
 	minMaxBytes     = 16 * 1024

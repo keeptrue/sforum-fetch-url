@@ -120,8 +120,8 @@
       "key": "timeout_ms",
       "label": { "zh-CN": "单次抓取超时（毫秒）", "en-US": "Per-fetch timeout (ms)" },
       "description": {
-        "zh-CN": "包含连接、重定向与读取的总预算，可填 1000–4500。AI 工具本身在宿主侧有 5000 毫秒硬上限，因此这里不会允许填更大。",
-        "en-US": "Total budget covering connect, redirects, and read; 1000–4500. The AI tool has a hard 5000 ms host-side ceiling, so larger values are not accepted."
+        "zh-CN": "包含连接、重定向与读取的总预算，可填 1000–29000。宿主 v3.0.20 的单次 AI 工具调用上限是 30000 毫秒，插件自己留 1 秒给封装与返回，所以这里最多填 29000。",
+        "en-US": "Total budget covering connect, redirects, and read; 1000–29000. A single AI tool call may take at most 30000 ms on host v3.0.20; this plugin keeps one second for wrapping and returning, so 29000 is the ceiling here."
       },
       "type": "number",
       "default": "4000",
@@ -132,8 +132,8 @@
       "key": "max_bytes",
       "label": { "zh-CN": "响应体读取上限（字节）", "en-US": "Response body read limit (bytes)" },
       "description": {
-        "zh-CN": "只读取这么多字节再抽取正文，可填 16384–1048576。模型最终能看到的正文还会被宿主截断到 8000 字节，所以调大只对长页面有意义。",
-        "en-US": "Only this many bytes are read before extraction; 16384–1048576. The model still sees at most 8000 bytes because the host truncates tool results, so raising this only matters for long pages."
+        "zh-CN": "只读取这么多字节再抽取正文，可填 16384–1048576。回给模型的正文另有 50000 字节上限：宿主单条工具结果截断线是 64000 字节、单次回复累计 256000 字节，插件按默认 5 步预算取 50000，两条线都不撞，切点始终在插件手里。",
+        "en-US": "Only this many bytes are read before extraction; 16384–1048576. The text handed to the model is capped separately at 50000 bytes: the host truncates one tool result at 64000 bytes and one reply at 256000 bytes, and 50000 keeps a default five-step budget inside both lines so the cut stays on the plugin's terms."
       },
       "type": "number",
       "default": "524288",

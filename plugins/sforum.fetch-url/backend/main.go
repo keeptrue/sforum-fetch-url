@@ -26,8 +26,9 @@ const (
 	toolNameProbe = "sforum-fetch-url-probe"
 
 	// declaredTimeoutMS 必须与 manifest 的 timeoutMs 逐字一致：宿主会拿清单里
-	// 的数字作为每次调用的截止时间，并在派发前校验它没有漂移。
-	declaredTimeoutMS = 5000
+	// 的数字作为每次调用的截止时间，并在派发前校验它没有漂移。30000 是宿主
+	// v3.0.20 的 AIToolMaximumTimeoutMS，main_test.go 用 SDK 常量钉住这条对齐。
+	declaredTimeoutMS = 30000
 )
 
 const fetchToolDescription = "抓取一个外部网页并返回它的正文纯文本。当用户给出链接、或需要引用站外页面内容时使用。" +

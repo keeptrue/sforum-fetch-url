@@ -23,9 +23,9 @@ concurrency:
 
 env:
   SFORUM_REPOSITORY: keeptrue/SForum
-  # 与 ci.yml 同一个宿主基线 commit（e753c72b0 = 账号改名提交）；
+  # 与 ci.yml 同一个宿主基线 commit（9baabbf1c = v3.0.20 tag 提交）；
   # 四条流水线（ci / release × 本地）都按它构建。
-  SFORUM_REF: ${{ github.event.inputs.sforum_ref || 'e753c72b06e45da50d25326c049c51312f887046' }}
+  SFORUM_REF: ${{ github.event.inputs.sforum_ref || '9baabbf1c65142c8338aa03dd93000e998228323' }}
   PACKAGE_DIR: plugins/sforum.fetch-url
   PACKAGE_SLUG: sforum-fetch-url
 

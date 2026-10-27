@@ -3,6 +3,23 @@
 发布物的版本号与 `plugins/sforum.fetch-url/sforum.extension.json` 的 `version` 一致，
 标签为 `v<version>`。发布说明由 `.github/workflows/release.yml` 从本文件对应小节生成。
 
+## [1.1.0]
+
+- 预算对齐宿主 `v3.0.20`：AI 工具超时上限从 5000ms 放宽到 30000ms，单条工具结果从
+  8000 字节放宽到 64000 字节、单次回复累计 256000 字节。插件按新上限重定自己的预算：
+  清单 `timeoutMs` 声明 30000（贴着宿主上限），设置页 `timeout_ms` 的可填上限从 4500
+  提到 29000（留 1 秒给封装与返回），回给模型的正文预算从 7500 提到 50000 字节——
+  单条在 64000 线下，默认 5 步 × 50000 = 250000 也在 256000 累计线下，两条截断线
+  都不会由宿主来切。
+- `sforumVersion` 从不可验证的 `>=0.1.0` 收紧到 `>=3.0.20`：1.1.0 声明了 30000ms
+  超时，老宿主的上限是 5000，装上去只会在清单校验阶段失败；写明下限让拒绝发生在
+  安装前，而不是启用时。
+- 构建基线钉到宿主 `v3.0.20`（commit `9baabbf1c`），CI 与 Release 的 `SFORUM_REF`
+  同步；`main_test.go` 新增断言：声明的 `timeoutMs` 必须等于 SDK 导出的
+  `HostAIToolMaximumTimeoutMS`。宿主再动上限时测试先红，而不是等运营者发现。
+- 设置页文案、README、NOTES 里「宿主 5000ms / 8000 字节」的旧说法一并改掉；
+  `pluginVersion`（User-Agent）从 1.0.0 补到 1.1.0，与清单版本对齐。
+
 ## [1.0.3]
 
 - 包内品牌资产三件套：`brand/icon.svg`（512 viewBox，自包含）、`brand/icon.png`（512×512）、

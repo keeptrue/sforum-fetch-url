@@ -21,13 +21,12 @@ concurrency:
 env:
   SFORUM_REPOSITORY: keeptrue/SForum
   # 本插件依赖的扩展宿主面（admin.pages[].group 的侧栏分区、lifecycle V2、
-  # ai_tool_probe 设置动作、aiTools[] 工具登记）自宿主 v3.0.13 起已在 main 上。
+  # ai_tool_probe 设置动作、aiTools[] 工具登记）自宿主 v3.0.13 起已在 main 上；
+  # v3.0.20 又把 AI 工具预算放宽到 30000ms / 单条 64000 字节 / 单次回复 256000 字节，
+  # 1.1.0 的预算对齐就是按这一版量的，所以基线钉到 v3.0.20 的 tag 提交。
   # 这里钉 commit 而不是 main：构建基线可复现，宿主 main 前进也不会让旧版本莫名变红。
-  # 钉在 e753c72b0（账号改名 zhuchunshu → keeptrue 的那个提交）而不是 v3.0.13 tag：
-  # tag 上的 apps/api/go.mod 仍声明旧模块路径，本插件的 require/replace 已改成
-  # github.com/keeptrue/sforum/apps/api，两者对不上会直接编译失败。
   # 升级宿主基线时同步改本文件、release.yml 与 backend/go.mod 的 go 版本。
-  SFORUM_REF: e753c72b06e45da50d25326c049c51312f887046
+  SFORUM_REF: 9baabbf1c65142c8338aa03dd93000e998228323
   PACKAGE_DIR: plugins/sforum.fetch-url
 
 jobs:

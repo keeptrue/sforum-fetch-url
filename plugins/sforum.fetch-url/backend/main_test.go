@@ -159,7 +159,12 @@ func TestFetchToolParametersStayUnderHostLimits(t *testing.T) {
 	if len(fetchToolDescription) > limits.description || len(probeToolDescription) > limits.description {
 		t.Fatalf("tool description exceeds the host limit of %d bytes", limits.description)
 	}
-	if declaredTimeoutMS <= 0 || declaredTimeoutMS > 5000 {
-		t.Fatalf("declared timeout %dms is outside the host's 1..5000 range", declaredTimeoutMS)
+	if declaredTimeoutMS <= 0 || declaredTimeoutMS > pluginv2.HostAIToolMaximumTimeoutMS {
+		t.Fatalf("declared timeout %dms is outside the host's 1..%d range", declaredTimeoutMS, pluginv2.HostAIToolMaximumTimeoutMS)
+	}
+	// 声明值必须贴着宿主上限：调低会让运营者在设置页填不出更大的超时，而
+	// 设置页文案说的正是「宿主允许多少就能填多少」。宿主改上限时这条会红。
+	if declaredTimeoutMS != pluginv2.HostAIToolMaximumTimeoutMS {
+		t.Fatalf("declared timeout %dms must equal the host ceiling %dms", declaredTimeoutMS, pluginv2.HostAIToolMaximumTimeoutMS)
 	}
 }

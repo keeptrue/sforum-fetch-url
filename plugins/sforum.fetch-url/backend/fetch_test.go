@@ -231,8 +231,10 @@ func TestFetchTruncatesOversizedBody(t *testing.T) {
 	if len(result.Content) > payloadBudget {
 		t.Fatalf("payload %d bytes exceeds the %d byte budget", len(result.Content), payloadBudget)
 	}
-	if len(result.Content) >= 8000 {
-		t.Fatalf("payload must stay under the host's 8000 byte truncation point, got %d", len(result.Content))
+	// 宿主 v3.0.20 的单条工具结果截断线是 64000 字节；插件预算必须留在它下面，
+	// 否则宿主会在结构中间切一刀。
+	if len(result.Content) >= 64000 {
+		t.Fatalf("payload must stay under the host's 64000 byte truncation point, got %d", len(result.Content))
 	}
 }
 

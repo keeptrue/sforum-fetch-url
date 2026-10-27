@@ -33,7 +33,7 @@
         ],
         "type": "object"
       },
-      "timeoutMs": 5000
+      "timeoutMs": 30000
     },
     {
       "contractVersion": "sforum.fetch-url.tool.probe_fetch@1",
@@ -70,7 +70,7 @@
         },
         "type": "object"
       },
-      "timeoutMs": 5000
+      "timeoutMs": 30000
     }
   ],
   "author": {
@@ -78,7 +78,7 @@
     "url": "https://github.com/keeptrue/sforum"
   },
   "backend": {
-    "digest": "a4e5804ac5a2991521321ffcd57ea362cd01f50c92748b74750b30f2a2211c21",
+    "digest": "c1dab28c334a490b42061d86ca52045e6471d7bf91740d6ef6f8d7030103c359",
     "entry": "backend/plugin",
     "hostApiVersion": "sforum.host@2",
     "protocolVersion": 2,
@@ -136,14 +136,14 @@
   "name": "SForum AI URL Fetch",
   "packageFiles": [
     {
-      "digest": "a4e5804ac5a2991521321ffcd57ea362cd01f50c92748b74750b30f2a2211c21",
+      "digest": "c1dab28c334a490b42061d86ca52045e6471d7bf91740d6ef6f8d7030103c359",
       "id": "sforum.fetch-url.file.backend",
       "kind": "executable",
       "path": "backend/plugin"
     }
   ],
-  "sforumVersion": "\u003e=0.1.0",
+  "sforumVersion": ">=3.0.20",
   "type": "plugin",
   "url": "https://github.com/keeptrue/sforum-fetch-url",
-  "version": "1.0.3"
+  "version": "1.1.0"
 }

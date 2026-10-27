@@ -16,16 +16,19 @@ import (
 
 const (
 	// pluginVersion 只用于 User-Agent；发布时与 manifest 的 version 保持一致。
-	pluginVersion = "1.0.0"
+	pluginVersion = "1.1.0"
 	// maxRedirects 是跟随跳数上限。每一跳都会重新过 scheme、主机守卫与白名单，
 	// 否则一个开放重定向就能把「只允许 example.com」变成「允许任何站点」。
 	maxRedirects = 3
 	// maxResponseBytes 是「连读都不读」的硬上限：Content-Length 超过它就说明
 	// 目标根本不是一篇文章，没必要为它消耗带宽与时间。
 	maxResponseBytes = 8 * 1024 * 1024
-	// payloadBudget 是回给模型的正文上限，刻意小于宿主 8000 字节的工具结果截断，
-	// 这样切在哪里由插件决定（可读的边界），而不是由宿主在结构中间切一刀。
-	payloadBudget = 7500
+	// payloadBudget 是回给模型的正文上限。宿主 v3.0.20 有两条截断线：单条
+	// MaxToolResultBytes=64000、单次回复累计 MaxToolResultRunBytes=256000。
+	// 默认工具步数预算是 5 步，50000 × 5 = 250000 仍在累计线内，所以这个值
+	// 同时避开两条线——切点始终在插件手里（元信息行 + 正文 + 明确的截断说明），
+	// 而不是由宿主在结构中间切一刀。
+	payloadBudget = 50000
 	// probePreviewBytes 是设置页探测回显的正文预览长度。
 	probePreviewBytes = 400
 )

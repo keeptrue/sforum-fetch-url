@@ -69,11 +69,13 @@ cd ../../.. && ./scripts/prepare-package.sh
 
 ## 宿主约束速查（实测）
 
-1. **AI 工具超时上限 5000ms**，且运行期截止时间必须逐字等于清单 `timeoutMs`；
-   插件自己的抓取预算要更小（本插件上限 4500ms），否则宿主会在插件返回结果前掐断，
-   运营者看到的是「工具无响应」而不是一条可解释的超时说明。
-2. **工具结果被宿主截断到 8000 字节/条**（单次回复累计 16000）。所以本插件自己把
-   payload 压到 7500 字节以内，让切点由插件决定。
+1. **AI 工具超时上限 30000ms**（宿主 `AIToolMaximumTimeoutMS`，v3.0.20 起；此前是
+   5000），且运行期截止时间必须逐字等于清单 `timeoutMs`；插件自己的抓取预算要更小
+   （本插件声明 30000、上限 29000，留 1 秒给封装与返回），否则宿主会在插件返回结果前
+   掐断，运营者看到的是「工具无响应」而不是一条可解释的超时说明。
+2. **工具结果被宿主截断到 64000 字节/条**（单次回复累计 256000，v3.0.20 起；此前是
+   8000/16000）。所以本插件自己把 payload 压到 50000 字节以内——单条在线内，默认 5 步
+   累计 250000 也在累计线内，让切点由插件决定。
 3. **登记 ≠ 暴露**：模型只看到用途白名单里的工具名。装上插件后必须在
    AI 控制台 → 用途 → `forum.reply` → 模型可见工具 → 自定义 里点名 `fetch-url`。
    未注册的名字会被服务端跳过，所以可以先写配置后装插件。
@@ -106,8 +108,9 @@ publish（`SHA256SUMS` + Release）。
 
 - **发版前把 `sforum.extension.json` 的 version 提到与标签一致**，并在 `CHANGELOG.md`
   写同名小节——发布说明就从那里生成。
-- CI 与 Release 共用 `SFORUM_REF`（当前钉 `e753c72b0` = 账号改名提交；宿主 `apps/api/go.mod`
-  自该提交起声明 `github.com/keeptrue/sforum/apps/api`，早于此的 tag 仍是旧模块路径，钉上去会编译失败）。
+- CI 与 Release 共用 `SFORUM_REF`（当前钉 `9baabbf1c` = `v3.0.20` tag 提交；1.1.0 的预算
+  对齐就是按这一版量的。更早的 tag 有旧模块路径问题：`apps/api/go.mod` 直到 `e753c72b0`
+  才声明 `github.com/keeptrue/sforum/apps/api`）。
   升宿主基线时同步改两个 workflow 和 `backend/go.mod` 的 `go` 指令。
 - publish 会断言「Release 非草稿 + 四个平台包齐全」：草稿会被自动转正，缺包直接失败。
 - `workflow_dispatch` 只跑 verify + build，不创建 Release，用来演练构建。
